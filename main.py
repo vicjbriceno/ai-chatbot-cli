@@ -5,10 +5,17 @@ from dotenv import load_dotenv
 load_dotenv()  # lee el .env y mete las env vars
 client = anthropic.Anthropic()  # toma la anthropic key
 
+PRECIO_ENTRADA = 1.00 / 1_000_000
+PRECIO_SALIDA = 5.00 / 1_000_000
+
+
 messages = []
+input_tokens_total = 0
+output_tokens_total = 0
+
 
 while True:
-    user_input = input("Escribe tu pregunta o escribe X para terminar la sesion: ")
+    user_input = input("Escribe tu pregunta o escribe X para terminar la sesion: ").strip()
 
     if user_input == "X" or user_input == "x":
         break
@@ -26,5 +33,17 @@ while True:
         if block.type == "text":
             messages.append({"role": "assistant", "content": block.text})
             print(block.text)
+
     print(f"Tokens entrada: {response.usage.input_tokens}")
+    input_tokens_total += response.usage.input_tokens
+    input_cost = input_tokens_total * PRECIO_ENTRADA
+
     print(f"Tokens de salida: {response.usage.output_tokens}")
+    output_tokens_total += response.usage.output_tokens
+    output_cost = output_tokens_total * PRECIO_SALIDA
+
+if input_tokens_total:
+    print(
+        f"Total use: \n Input Tokens Costs: ${input_cost:.4f} \n Output Tokens Costs: ${output_cost:.4f}"
+    )
+    print(f"El coste total es: ${input_cost + output_cost:.4f}")

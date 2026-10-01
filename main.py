@@ -15,19 +15,30 @@ output_tokens_total = 0
 
 
 while True:
-    user_input = input("Escribe tu pregunta o escribe X para terminar la sesion: ").strip()
+    user_input = input(
+        "Escribe tu pregunta o escribe X para terminar la sesion: "
+    ).strip()
 
     if user_input == "X" or user_input == "x":
         break
     if not user_input:
         continue
     messages.append({"role": "user", "content": user_input})
-    response = client.messages.create(
-        model="claude-haiku-4-5",
-        max_tokens=16000,
-        system="Eres un asistente que contesta preguntas generales y explicas conceptos de una manera facil, usando analogias, y que devuelve sus respuestas en texto plano, sin emojis y limitado a 3 oraciones por respuesta",
-        messages=messages,
-    )
+    try:
+        response = client.messages.create(
+            model="claude-haiku-4-5",
+            max_tokens=16000,
+            system="Eres un asistente que contesta preguntas generales y explicas conceptos de una manera facil, usando analogias, y que devuelve sus respuestas en texto plano, sin emojis y limitado a 3 oraciones por respuesta",
+            messages=messages,
+        )
+    except anthropic.APIConnectionError:
+        print("No pude conectar con la API. Revisa tu conexion e intenta de nuevo.")
+        messages.pop()
+        continue
+    except anthropic.APIStatusError as e:
+        print(f"La API devolvio un error ({e.status_code}). Intenta de nuevo.")
+        messages.pop()
+        continue
 
     for block in response.content:
         if block.type == "text":

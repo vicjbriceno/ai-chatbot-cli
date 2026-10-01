@@ -25,12 +25,18 @@ while True:
         continue
     messages.append({"role": "user", "content": user_input})
     try:
-        response = client.messages.create(
+        with client.messages.stream(
             model="claude-haiku-4-5",
             max_tokens=16000,
             system="Eres un asistente que contesta preguntas generales y explicas conceptos de una manera facil, usando analogias, y que devuelve sus respuestas en texto plano, sin emojis y limitado a 3 oraciones por respuesta",
             messages=messages,
-        )
+        ) as stream:
+            for text in stream.text_stream:
+                print(text, end="", flush=True)
+        print()
+
+        final = stream.get_final_message()
+
     except anthropic.APIConnectionError:
         print("No pude conectar con la API. Revisa tu conexion e intenta de nuevo.")
         messages.pop()
@@ -40,17 +46,16 @@ while True:
         messages.pop()
         continue
 
-    for block in response.content:
+    for block in final.content:
         if block.type == "text":
             messages.append({"role": "assistant", "content": block.text})
-            print(block.text)
 
-    print(f"Tokens entrada: {response.usage.input_tokens}")
-    input_tokens_total += response.usage.input_tokens
+    print(f"Tokens entrada: {final.usage.input_tokens}")
+    input_tokens_total += final.usage.input_tokens
     input_cost = input_tokens_total * PRECIO_ENTRADA
 
-    print(f"Tokens de salida: {response.usage.output_tokens}")
-    output_tokens_total += response.usage.output_tokens
+    print(f"Tokens de salida: {final.usage.output_tokens}")
+    output_tokens_total += final.usage.output_tokens
     output_cost = output_tokens_total * PRECIO_SALIDA
 
 if input_tokens_total:
